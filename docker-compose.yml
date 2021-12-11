@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  webserver:
+    image: nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - "./html:/usr/share/nginx/html"
+      - "./conf.d:/etc/nginx/conf.d"
+  api:
+    container_name: api
+    build: ./fastapi
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./fastapi:/app"
