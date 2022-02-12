@@ -1,5 +1,5 @@
 # coding: UTF-8
-
+import os
 import numpy as np
 from tqdm import tqdm
 
@@ -108,9 +108,16 @@ def valid_one_epoch(dataloader, model, criterion):
 @hydra.main(config_path="./", config_name="config")
 def do_train(cfg: DictConfig) -> None:
 
+    orig_dir = hydra.utils.get_original_cwd()
+    os.chdir(orig_dir)
+    logger.info(f'Original working directry: {orig_dir}')
+
     mlflow.set_tracking_uri("http://mlflow:5000")
     mlflow.log_param("epochs", cfg.epochs)
-
+    mlflow.log_param("lr", cfg.lr)
+    mlflow.log_param("batch_size", cfg.batch_size)
+    mlflow.log_param("dim_hidden1", cfg.dim_hidden1)
+    mlflow.log_param("dim_hidden2", cfg.dim_hidden2)
 
     transform = transforms.Compose(
         [
@@ -161,27 +168,27 @@ def do_train(cfg: DictConfig) -> None:
     best_valid_loss = np.inf
 
     for epoch in range(cfg.epochs):
-        loss_train = train_one_epoch(
+        train_loss = train_one_epoch(
             dataloader=train_loader,
             model=model,
             optimizer=optimizer,
             criterion=criterion,
         )
 
-        loss_valid = valid_one_epoch(
+        valid_loss = valid_one_epoch(
             dataloader=valid_loader, model=model, criterion=criterion
         )
 
-        mlflow.log_metric("loss_valid", loss_valid)
-        if loss_valid < best_valid_loss:
-            torch.save(model.state_dict(), "/model_update/model.pth")
+        mlflow.log_metric("train_loss", train_loss)
+        mlflow.log_metric("valid_loss", valid_loss)
+        if valid_loss < best_valid_loss:
+            torch.save(model.state_dict(), "model.pth")
             
-            logger.info(f"Validation loss is improved: {best_valid_loss} -> {loss_valid}")
-            best_valid_loss = loss_valid
-        mlflow.log_artifact("/model_update/model.pth")
-        mlflow.log_artifact("/model_update/train.py")
-        mlflow.log_param("hoge", "fuga")
-        # mlflow.pytorch.log_model(model, "model", registered_model_name="mnist-model")
+            logger.info(f"Validation loss is improved: {best_valid_loss} -> {valid_loss}")
+            best_valid_loss = valid_loss
+
+    model.load_state_dict(torch.load("model.pth"))
+    mlflow.pytorch.log_model(model, "model", registered_model_name="mnist-model")
 
     return 0
 
