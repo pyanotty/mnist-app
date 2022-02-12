@@ -1,0 +1,8 @@
+registered_model_name: "mnist_model"
+
+# training params
+epochs: 1
+batch_size: 32
+dim_hidden1: 64
+dim_hidden2: 64
+lr: 2e-5

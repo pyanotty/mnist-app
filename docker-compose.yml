@@ -15,3 +15,33 @@ services:
       - "8000:8000"
     volumes:
       - "./fastapi:/app"
+  mlflow:
+    container_name: mlflow 
+    build: ./mlflow
+    ports:
+      -  "5000:5000"
+    volumes:
+      - "./mlflow:/mlflow"
+    command: mlflow server 
+             --host 0.0.0.0 --port 5000
+            #  --backend-store-uri sqlite:///mydb.sqlite 
+            #  --default-artifact-root file:/mlflow/mlruns
+    restart: always
+  model_update:
+    container_name: model_update
+    build: ./model_update
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    environment: 
+    - NVIDIA_VISIBLE_DEVICES=all
+    - NVIDIA_DRIVER_CAPABILITIES=all
+    # ports:
+    #   - "5000:5000"
+    volumes:
+      - "./model_update:/model_update"
+    command: python train.py
+    
+    
