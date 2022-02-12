@@ -22,10 +22,11 @@ services:
       -  "5000:5000"
     volumes:
       - "./mlflow:/mlflow"
+      - "./model_update:/model_update"
     command: mlflow server 
-             --host 0.0.0.0 --port 5000
-            #  --backend-store-uri sqlite:///mydb.sqlite 
-            #  --default-artifact-root file:/mlflow/mlruns
+             --backend-store-uri sqlite:///mydb.sqlite
+             --default-artifact-root file:/model_update/mlruns
+             --host 0.0.0.0 --port 5000 
     restart: always
   model_update:
     container_name: model_update
