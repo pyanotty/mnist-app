@@ -1,7 +1,7 @@
 registered_model_name: "mnist_model"
 
 # training params
-epochs: 1
+epochs: 10
 batch_size: 32
 dim_hidden1: 64
 dim_hidden2: 64

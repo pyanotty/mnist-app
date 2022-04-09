@@ -188,7 +188,7 @@ def do_train(cfg: DictConfig) -> None:
             best_valid_loss = valid_loss
 
     model.load_state_dict(torch.load("model.pth"))
-    mlflow.pytorch.log_model(model, "model", registered_model_name="mnist-model")
+    mlflow.pytorch.log_model(model, "model", registered_model_name=cfg.registered_model_name)
 
     return 0
 

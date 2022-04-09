@@ -15,6 +15,7 @@ services:
       - "8000:8000"
     volumes:
       - "./fastapi:/app"
+      - "./model_update/mlruns:/model_update/mlruns"
   mlflow:
     container_name: mlflow 
     build: ./mlflow
