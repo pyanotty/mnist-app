@@ -9,6 +9,7 @@ from torch import nn
 from torch.optim import Adam
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+import torchmetrics
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import hydra
@@ -85,10 +86,11 @@ def valid_one_epoch(dataloader, model, criterion):
   model.eval()
   model.to(DEVICE)
 
+  metric = torchmetrics.Accuracy()
+
   prog_bar = tqdm(dataloader)
   # 勾配計算を行わないことを明示的に宣言することで、計算が速くなる
   with torch.no_grad():
-
     for X, y in prog_bar:
 
       X = X.to(DEVICE)
@@ -98,11 +100,15 @@ def valid_one_epoch(dataloader, model, criterion):
       loss = criterion(out, y)
 
       losses.append(loss.detach().cpu())
+
+      batch_score = metric(out, y)
       # message = f"valid loss: {np.mean(losses):.5f}"
       message = "hoge"
       prog_bar.set_description(message)
+    
+  acc = metric.compute()
 
-  return np.mean(losses)
+  return np.mean(losses), acc.item()
 
 
 @hydra.main(config_path="./", config_name="config")
@@ -122,6 +128,7 @@ def do_train(cfg: DictConfig) -> None:
     transform = transforms.Compose(
         [
             transforms.ToTensor(),
+            transforms.Normalize(mean=0.0, std=0.5),
             transforms.Lambda(lambda x: x.view(-1)),
         ]
     )
@@ -168,6 +175,7 @@ def do_train(cfg: DictConfig) -> None:
     best_valid_loss = np.inf
 
     for epoch in range(cfg.epochs):
+        print(f"start {epoch}")
         train_loss = train_one_epoch(
             dataloader=train_loader,
             model=model,
@@ -175,12 +183,13 @@ def do_train(cfg: DictConfig) -> None:
             criterion=criterion,
         )
 
-        valid_loss = valid_one_epoch(
+        valid_loss, valid_acc = valid_one_epoch(
             dataloader=valid_loader, model=model, criterion=criterion
         )
 
         mlflow.log_metric("train_loss", train_loss)
         mlflow.log_metric("valid_loss", valid_loss)
+        mlflow.log_metric("valid_acc", valid_acc)
         if valid_loss < best_valid_loss:
             torch.save(model.state_dict(), "model.pth")
             
